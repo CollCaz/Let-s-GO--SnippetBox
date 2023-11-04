@@ -9,7 +9,11 @@ import (
 )
 
 func home(w http.ResponseWriter, r *http.Request) {
-	template_set, err := template.ParseFiles("./ui/html/pages/home.tmpl.html")
+	files := []string{
+		"./ui/html/pages/base.tmpl.html",
+		"./ui/html/pages/home.tmpl.html",
+	}
+	template_set, err := template.ParseFiles(files...)
 	if err != nil {
 		log.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -19,7 +23,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = template_set.Execute(w, nil)
+	err = template_set.ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		log.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
