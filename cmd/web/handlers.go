@@ -12,6 +12,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	files := []string{
 		"./ui/html/pages/base.tmpl.html",
 		"./ui/html/pages/home.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
 	}
 	template_set, err := template.ParseFiles(files...)
 	if err != nil {
