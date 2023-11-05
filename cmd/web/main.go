@@ -5,25 +5,36 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
+
+// Application struct to hold application-wide dependencies
+type application struct {
+	errorLog *log.Logger
+	infoLog  *log.Logger
+}
 
 func main() {
 	// The HTTP Address
 	addr := flag.String("addr", ":4000", "HTTP Network Address")
 	flag.Parse()
 
-	mux := http.NewServeMux()
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	fileserver := http.FileServer(http.Dir("./ui/static/"))
+	app := &application{
+		errorLog: errLog,
+		infoLog:  infoLog,
+	}
 
-	mux.Handle("/static/", http.StripPrefix("/static", fileserver))
-
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
+	srvr := &http.Server{
+		Addr:     *addr,
+		ErrorLog: errLog,
+		Handler:  app.routes(),
+	}
 
 	fmt.Printf("http://www.localhost%s\n", *addr)
-	log.Printf("Starting server on %s\n", *addr)
-	err := http.ListenAndServe(*addr, mux)
-	log.Fatal(err)
+	infoLog.Printf("Starting server on %s\n", *addr)
+	err := srvr.ListenAndServe()
+	errLog.Fatal(err)
 }
