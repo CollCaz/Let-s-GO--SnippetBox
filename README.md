@@ -1,5 +1,5 @@
-# Lets-GO -- SnippetBox
-This is from the book [Let's Go](https://lets-go.alexedwards.net/)
+# Let-s-GO -- SnippetBox
+This is from the book [Let's Go](https://lets-go.alexedwards.net/) by Alex Edwards.
 
 
 # Note on License
