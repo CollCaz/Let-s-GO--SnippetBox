@@ -4,18 +4,21 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"os"
+	"text/template"
+
+	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Application struct to hold application-wide dependencies
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	snippets *models.SnippetModel
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -36,10 +39,16 @@ func main() {
 
 	defer db.Close()
 
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		errLog.Fatal(err)
+	}
+
 	app := &application{
-		errorLog: errLog,
-		infoLog:  infoLog,
-		snippets: &models.SnippetModel{DB: db},
+		errorLog:      errLog,
+		infoLog:       infoLog,
+		snippets:      &models.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	srvr := &http.Server{
