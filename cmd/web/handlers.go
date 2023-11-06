@@ -3,35 +3,50 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
+	"text/template"
+
+	//	"log"
 	"net/http"
 	"strconv"
-	"text/template"
+
+	//"text/template"
 
 	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
 )
 
 // The handler func for /
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	files := []string{
-		"./ui/html/pages/base.tmpl.html",
-		"./ui/html/pages/home.tmpl.html",
-		"./ui/html/partials/nav.tmpl.html",
-	}
-	template_set, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Print(err.Error())
-		app.serverError(w, err)
-	}
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
 
-	err = template_set.ExecuteTemplate(w, "base", nil)
+	snippets, err := app.snippets.Latest()
 	if err != nil {
-		log.Print(err.Error())
 		app.serverError(w, err)
+		return
+	}
+
+	files := []string{
+		"./ui/html/pages/base.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/home.tmpl.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := &templateData{
+		Snippets: snippets,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 }
 
@@ -54,7 +69,27 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "%+v", snippet)
+	files := []string{
+		"./ui/html/pages/base.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/view.tmpl.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := &templateData{
+		Snippet: snippet,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
 // Handler func for creating snippets, only accepts POST requests
