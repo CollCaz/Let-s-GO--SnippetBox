@@ -16,21 +16,35 @@ type Snippet struct {
 }
 
 // Struct wrapping sql.DB method
-type snippetModel struct {
+type SnippetModel struct {
 	DB *sql.DB
 }
 
 // snippetModel method to insert a new snippet to the database
-func (m *snippetModel) Insert(title string, content string, expires int) (int, error) {
-	return 0, nil
+func (m *SnippetModel) Insert(title string, content string, expires int) (int, error) {
+	statement := `INSERT INTO snippets (title, content, created, expires)
+  VALUES (?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP), INTERVAL ? DAY)`
+
+	result, err := m.DB.Exec(statement, title, content, expires)
+
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
 }
 
 // snippetModel method to get a snippet base on ID
-func (m *snippetModel) Get(id int) (*Snippet, error) {
+func (m *SnippetModel) Get(id int) (*Snippet, error) {
 	return nil, nil
 }
 
 // snippetModel method to get the latest 10 snippets
-func (m *snippetModel) Latest() ([]*Snippet, error) {
+func (m *SnippetModel) Latest() ([]*Snippet, error) {
 	return nil, nil
 }

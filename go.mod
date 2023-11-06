@@ -1,4 +1,5 @@
-module github.com/CollCaz/Let-s-GO--SnippetBox
+//module github.com/CollCaz/Let-s-GO--SnippetBox
+module github.com/CollCaz/Lets-GO--SnippetBox
 
 go 1.21.3
 
