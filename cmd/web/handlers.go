@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"text/template"
+
+	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
 )
 
 // The handler func for /
@@ -37,11 +40,21 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		app.notFound(w, err)
+		app.notFound(w)
 		return
 	}
 
-	fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
+	snippet, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrorNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	fmt.Fprintf(w, "%+v", snippet)
 }
 
 // Handler func for creating snippets, only accepts POST requests

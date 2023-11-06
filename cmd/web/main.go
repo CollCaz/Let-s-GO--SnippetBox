@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/CollCaz/Let-s-GO--SnippetBox/internal/models"
+	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
