@@ -1,15 +1,32 @@
 package main
 
 import (
+	"net/http"
 	"path/filepath"
 	"text/template"
+	"time"
 
 	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
 )
 
 type templateData struct {
-	Snippet  *models.Snippet   // For displaying a single Snippet
-	Snippets []*models.Snippet // For displaying a bunch of Snippets
+	CurrentYear int
+	Snippet     *models.Snippet   // For displaying a single Snippet
+	Snippets    []*models.Snippet // For displaying a bunch of Snippets
+}
+
+func (app *application) newTemplateData(r *http.Request) *templateData {
+	return &templateData{
+		CurrentYear: time.Now().Year(),
+	}
+}
+
+func humanDate(t time.Time) string {
+	return t.Format("02 Jan 2006 at 15:04")
+}
+
+var functions = template.FuncMap{
+	"humanDate": humanDate,
 }
 
 // Creates in memory cache for all templates
@@ -26,7 +43,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		name := filepath.Base(page)
 
 		// first, parse the base template into a template set
-		ts, err := template.ParseFiles("./ui/html/pages/base.tmpl.html")
+		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/pages/base.tmpl.html")
 		if err != nil {
 			return nil, err
 		}

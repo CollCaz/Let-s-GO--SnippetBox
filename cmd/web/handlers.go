@@ -3,33 +3,35 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/CollCaz/Lets-GO--SnippetBox/internal/models"
+	"github.com/julienschmidt/httprouter"
 )
 
 // The handler func for /
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	app.render(w, http.StatusOK, "home.tmpl.html", &templateData{
-		Snippets: snippets,
-	})
+	data := app.newTemplateData(r)
+	data.Snippets = snippets
+
+	app.render(w, http.StatusOK, "home.tmpl.html", data)
 }
 
 // Handler func for Viewing snippets with specific ID
 // snippetbox.com/snippet/view?id=123
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	params := httprouter.ParamsFromContext(r.Context())
+
+	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
 		app.notFound(w)
 		return
@@ -45,22 +47,56 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.render(w, http.StatusOK, "view.tmpl.html", &templateData{
-		Snippet: snippet,
-	})
+	data := app.newTemplateData(r)
+	data.Snippet = snippet
+
+	app.render(w, http.StatusOK, "view.tmpl.html", data)
+}
+
+func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	app.render(w, http.StatusOK, "create.tmpl.html", data)
 }
 
 // Handler func for creating snippets, only accepts POST requests
-func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
+func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	title := "Emilia<3"
-	content := "Emilia is best girl"
-	expires := 7
+	title := r.PostForm.Get("title")
+	content := r.PostForm.Get("content")
+
+	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fieldErros := make(map[string]string)
+	if strings.TrimSpace(title) == "" {
+		fieldErros["Title"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(title) > 100 {
+		{
+			fieldErros["Title"] = "This field cannot be more than 100 characters long"
+		}
+	}
+
+	if expires != 1 && expires != 7 && expires != 365 {
+		fieldErros["Expires"] = "This field must equal either 1, 7 or 365"
+	}
+
+	if strings.TrimSpace(content) == "" {
+		fieldErros["Content"] = "This field cannot be blank"
+	}
+
+	if len(fieldErros) != 0 {
+		fmt.Fprint(w, fieldErros)
+		return
+	}
 
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
@@ -68,5 +104,5 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
