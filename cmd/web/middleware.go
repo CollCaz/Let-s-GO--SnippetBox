@@ -16,6 +16,9 @@ func secureHeader(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-XSS-Protection", "0")
 
+		w.Header().Set("X-Frame-Options", "deny")
+
+
 		next.ServeHTTP(w, r)
 	})
 }
