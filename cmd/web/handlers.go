@@ -214,6 +214,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
+
 		return
 	}
 
