@@ -21,10 +21,11 @@ import (
 
 // Application struct to hold application-wide dependencies
 type application struct {
+	debug          bool
 	errorLog       *log.Logger
 	infoLog        *log.Logger
-	snippets       *models.SnippetModel
-	users          *models.UserModel
+	snippets       models.SnippetModelInterface
+	users          models.UserModelInterface
 	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
@@ -35,6 +36,8 @@ func main() {
 	addr := flag.String("addr", ":4000", "HTTP Network Address")
 	// MySQL DSN String
 	dsn := flag.String("dsn", "username:password@/snippetbox?parseTime=true", "MySQL data source name")
+	// Debug Mode
+	dbg := flag.Bool("dbg", false, "Shows detailed error information to the users")
 
 	flag.Parse()
 
@@ -61,6 +64,7 @@ func main() {
 	sessionManager.Cookie.Secure = true
 
 	app := &application{
+		debug:          *dbg,
 		errorLog:       errLog,
 		infoLog:        infoLog,
 		snippets:       &models.SnippetModel{DB: db},
@@ -84,7 +88,7 @@ func main() {
 		WriteTimeout: 10 * time.Minute,
 	}
 
-	fmt.Printf("http://www.localhost%s\n", *addr)
+	fmt.Printf("https://www.localhost%s\n", *addr)
 	infoLog.Printf("Starting server on %s\n", *addr)
 	err = srvr.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errLog.Fatal(err)

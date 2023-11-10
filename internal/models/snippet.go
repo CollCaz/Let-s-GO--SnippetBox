@@ -16,6 +16,12 @@ type Snippet struct {
 	Expires time.Time
 }
 
+type SnippetModelInterface interface {
+	Insert(title string, content string, expires int) (int, error)
+	Get(id int) (*Snippet, error)
+	Latest() ([]*Snippet, error)
+}
+
 // Struct wrapping sql.DB method
 type SnippetModel struct {
 	DB *sql.DB
@@ -45,14 +51,12 @@ func (m *SnippetModel) Get(id int) (*Snippet, error) {
 
 	s := &Snippet{}
 	err := m.DB.QueryRow(stmt, id).Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrorNoRecord
 		} else {
 			return nil, err
 		}
-
 	}
 	return s, nil
 }

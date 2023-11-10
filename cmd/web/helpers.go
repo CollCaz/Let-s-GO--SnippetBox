@@ -21,6 +21,10 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 	// Should revisit this later when im better at Go
 	app.errorLog.Output(3, trace) //nolint:all FIXME
 
+	if app.debug {
+		http.Error(w, trace, http.StatusInternalServerError)
+		return
+	}
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 

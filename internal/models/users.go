@@ -18,6 +18,14 @@ type User struct {
 	Created        time.Time
 }
 
+type UserModelInterface interface {
+	Insert(name, email, password string) error
+	Authenticate(email, password string) (int, error)
+	Exists(id int) (bool, error)
+	Get(id int) (*User, error)
+	PasswordUpdate(id int, currentPassword, newPassword string) error
+}
+
 type UserModel struct {
 	DB *sql.DB
 }
@@ -43,6 +51,49 @@ func (m *UserModel) Insert(name, email, password string) error {
 	}
 
 	return nil
+}
+
+func (m *UserModel) PasswordUpdate(id int, currentPassword, newPassword string) error {
+	var currentHashedPassword string
+	stmt := `SELECT hashed_password FROM users WHERE id=?`
+
+	err := m.DB.QueryRow(stmt, id).Scan(&currentHashedPassword)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(currentHashedPassword), []byte(currentPassword))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrInvalidCredentials
+		} else {
+			return err
+		}
+	}
+
+	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		return err
+	}
+
+	stmt = `UPDATE users SET hashed_password = ? WHERE id = ?`
+	_, err = m.DB.Exec(stmt, string(newHashedPassword), id)
+
+	return err
+}
+
+func (m *UserModel) Get(id int) (*User, error) {
+	user := User{}
+	stmt := `SELECT id, name, email, created FROM users WHERE id=?`
+	err := m.DB.QueryRow(stmt, id).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrorNoRecord
+		} else {
+			return nil, err
+		}
+	}
+	return &user, nil
 }
 
 // Used to Authenticate the user
